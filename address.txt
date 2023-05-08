@@ -1,4 +1,4 @@
-Afghanistan: AF 
+Afghanistan: AF
 Albania: AL
 Algeria: DZ
 Andorra: AD

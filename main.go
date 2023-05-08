@@ -8,7 +8,6 @@ func CheckError(e error)  {
 
 func main(){
 
-	ModifyEntireJsonFolderToAddCountryCode()
-	
+	CreateJsonFile()	
 	
 }
