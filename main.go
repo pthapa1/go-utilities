@@ -8,6 +8,6 @@ func CheckError(e error)  {
 
 func main(){
 
-	CreateJsonFile()	
+	AddCountryToAllFiles()
 	
 }

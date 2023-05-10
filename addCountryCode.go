@@ -10,7 +10,7 @@ import (
 
 type CompleteAddress struct {
 	Address
-	CountryCode    string `json:"country-code"`
+	CountryCode   string `json:"country-code"`
 
 }
 

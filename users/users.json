@@ -2,15 +2,17 @@
  {
   "id": 1,
   "name": "Kabul Serena Hotel",
-  "Address": "Hawashenasy, Airport Road, Kabul  Afghanistan, Kabul, Afghanistan",
+  "address": "Hawashenasy, Airport Road, Kabul  Afghanistan, Kabul, Afghanistan",
   "phone": "+93729202255",
-  "country-code": "AF"
+  "country-code": "AF",
+  "country": "users"
  },
  {
   "id": 2,
   "name": "Kabul Serena Hotel",
-  "Address": "Hawashenasy, Airport Road, Kabul  Afghanistan, Kabul, Afghanistan",
+  "address": "Hawashenasy, Airport Road, Kabul  Afghanistan, Kabul, Afghanistan",
   "phone": "+93729202255",
-  "country-code": "AF"
+  "country-code": "AF",
+  "country": "users"
  }
 ]
