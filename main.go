@@ -6,8 +6,10 @@ func CheckError(e error)  {
 	}
 }
 
+
+
 func main(){
 
-	AddCountryToAllFiles()
+	GenerateRandomNumber(98)
 	
 }
