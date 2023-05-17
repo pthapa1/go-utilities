@@ -10,22 +10,14 @@ func randomNumber(length int) int  {
 	return randomNumber;
 } 
 
-func GenerateRandomNumber(length int) []int  {
-	firstRandomNumber := randomNumber(length)
-	
-	fmt.Println(firstRandomNumber)
-
-	secondRandomNumber := randomNumber(length)
-	
-	if firstRandomNumber == secondRandomNumber {
-		secondRandomNumber = randomNumber(length)
-	}
-	fmt.Println(secondRandomNumber)
-
+func GenerateRandomNumber(maxRange int, numberOfItemsRequired int) []int  {
 	var randomNumberList []int;
 
-	randomNumberList = 	append(randomNumberList, firstRandomNumber)
-	randomNumberList = 	append(randomNumberList, secondRandomNumber)
+	for i := 0; i < numberOfItemsRequired ; i++ {
+			randomNumberList = append(randomNumberList, randomNumber(maxRange))
+	}
+
+	fmt.Printf("%v \n", randomNumberList);
 
 	return randomNumberList
 }
