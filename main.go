@@ -1,14 +1,31 @@
 package main
 
+import (
+	"fmt"
+	"reflect"
+)
+
 func CheckError(e error) {
 	if e != nil {
 		panic(e)
 	}
 }
 
+type Test struct {
+	Name string `json:"name"`
+	Age  int    `json:"age"`
+}
+
 func main() {
 
-	GenerateRandomNumber(10, 3)
+	var test Test
+	test = Test{
+		Name: "Pratik",
+		Age:  31,
+	}
+
+	numberOfKeys := reflect.TypeOf(test).NumField()
+	fmt.Println(numberOfKeys)
 
 }
 
