@@ -1,3 +1,4 @@
 ## Common Go Utilites
 
-Utilities like modifying files in a folder and adding texts in files.
+- `downloadDocument.go`: Provide a website and download all the documentation in pdf foramt
+- `randomNumbers.go`: Get a random number
