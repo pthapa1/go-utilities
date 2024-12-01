@@ -5,19 +5,20 @@ import (
 	"math/rand"
 )
 
-func randomNumber(length int) int  {
+func randomNumber(length int) int {
 	randomNumber := rand.Intn(length)
-	return randomNumber;
-} 
+	return randomNumber
+}
 
-func GenerateRandomNumber(maxRange int, numberOfItemsRequired int) []int  {
-	var randomNumberList []int;
+func GenerateRandomNumber(maxRange int, numberOfItemsRequired int) []int {
+	var randomNumberList []int
 
-	for i := 0; i < numberOfItemsRequired ; i++ {
-			randomNumberList = append(randomNumberList, randomNumber(maxRange))
+	for i := 0; i < numberOfItemsRequired; i++ {
+		randomNumberList = append(randomNumberList, randomNumber(maxRange))
 	}
 
-	fmt.Printf("%v \n", randomNumberList);
+	fmt.Printf("%v \n", randomNumberList)
 
 	return randomNumberList
 }
+
