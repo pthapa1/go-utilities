@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -21,7 +22,7 @@ func createFilePath(filePath string) (string, error) {
 // listAllFiles searches for files matching the `matchFile` name (case-insensitive, .yaml/.yml only)
 // in the specified directory and its subdirectories. If no directory is specified, it starts from the project root.
 // Skips the `.git` folder during traversal. Returns an error if no matching files are found or if there are file system errors.
-func listAllFiles(matchFile string, path ...string) ([]string, error) {
+func listAllFiles(matchFile string, initialPath ...string) ([]string, error) {
 	matchFile = strings.ToLower(matchFile)
 	var result []string
 
@@ -32,10 +33,10 @@ func listAllFiles(matchFile string, path ...string) ([]string, error) {
 	}
 
 	var startPath string
-	if len(path) == 0 {
+	if len(initialPath) == 0 {
 		startPath = initAbsFp
 	} else {
-		startPath = path[0]
+		startPath = initialPath[0]
 	}
 
 	// Read the contents of the starting directory
@@ -73,7 +74,8 @@ func listAllFiles(matchFile string, path ...string) ([]string, error) {
 			subDirPath := filepath.Join(startPath, val.Name())
 			matches, err := listAllFiles(matchFile, subDirPath)
 			if err != nil {
-				return nil, fmt.Errorf("error processing subdirectory %s: %w", subDirPath, err)
+				dir := path.Base(subDirPath)
+				return nil, fmt.Errorf("\n error processing subdirectory %s: %w", dir, err)
 			}
 			result = append(result, matches...)
 		}
@@ -82,9 +84,9 @@ func listAllFiles(matchFile string, path ...string) ([]string, error) {
 	// Return an error if no matching files are found
 	if len(result) == 0 {
 		return nil, fmt.Errorf(
-			"no files with matching name '%s' found in path '%s'",
+			"\n no files with matching name '%s' found in path '%s'",
 			matchFile,
-			startPath,
+			initAbsFp,
 		)
 	}
 
