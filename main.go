@@ -7,9 +7,8 @@ import (
 	"strings"
 )
 
-// add error saying that we don't have file with matching name if the result is empty
-// add the function description here
-// and make it efficient
+// createFilePath generates an absolute file path by joining the project's root directory
+// with the provided relative filePath. Returns an error if the project root cannot be determined.
 func createFilePath(filePath string) (string, error) {
 	projectRoot, err := os.Getwd()
 	if err != nil {
@@ -19,13 +18,17 @@ func createFilePath(filePath string) (string, error) {
 	return finalFilePath, nil
 }
 
+// listAllFiles searches for files matching the `matchFile` name (case-insensitive, .yaml/.yml only)
+// in the specified directory and its subdirectories. If no directory is specified, it starts from the project root.
+// Skips the `.git` folder during traversal. Returns an error if no matching files are found or if there are file system errors.
 func listAllFiles(matchFile string, path ...string) ([]string, error) {
 	matchFile = strings.ToLower(matchFile)
 	var result []string
+
+	// Get the initial path to start the search
 	initAbsFp, err := createFilePath("")
 	if err != nil {
-		fmt.Println(err)
-		return []string{}, err
+		return nil, fmt.Errorf("error getting initial file path: %w", err)
 	}
 
 	var startPath string
@@ -35,22 +38,28 @@ func listAllFiles(matchFile string, path ...string) ([]string, error) {
 		startPath = path[0]
 	}
 
+	// Read the contents of the starting directory
 	dirContents, err := os.ReadDir(startPath)
 	if err != nil {
-		fmt.Println(err)
-		return []string{}, err
+		return nil, fmt.Errorf("error reading directory %s: %w", startPath, err)
 	}
 
-	for _, val := range dirContents {
-		filePattern := [2]string{".yaml", ".yml"}
+	filePattern := [2]string{".yaml", ".yml"}
 
-		// when it's a file
+	for _, val := range dirContents {
+		// Skip `.git` or `.vscode` directory
+		if val.IsDir() && strings.HasPrefix(val.Name(), ".") {
+			continue
+		}
+
+		// Process files
 		if !val.IsDir() {
-			// ensure that the file matches the pattern above
-			for _, ptrn := range filePattern {
-				if strings.Contains(val.Name(), ptrn) {
-					yamlFile := strings.Split(val.Name(), ptrn)[0]
-					matchFile = strings.Split(matchFile, ptrn)[0]
+			lowerName := strings.ToLower(
+				val.Name(),
+			) // Convert name to lowercase for consistent comparison
+			for _, ext := range filePattern {
+				if strings.HasSuffix(lowerName, ext) {
+					yamlFile := strings.TrimSuffix(lowerName, ext)
 					if matchFile == yamlFile {
 						matchingFp := filepath.Join(startPath, val.Name())
 						result = append(result, matchingFp)
@@ -59,24 +68,34 @@ func listAllFiles(matchFile string, path ...string) ([]string, error) {
 			}
 		}
 
-		// recurse into subdirectories
+		// Recurse into subdirectories, skipping `.git`
 		if val.IsDir() {
-			subDirPath := filepath.Join(startPath, val.Name())  // Use `startPath`
-			matches, err := listAllFiles(matchFile, subDirPath) // Recurse with new path
-			result = append(result, matches...)
+			subDirPath := filepath.Join(startPath, val.Name())
+			matches, err := listAllFiles(matchFile, subDirPath)
 			if err != nil {
-				fmt.Println(err)
-				return []string{}, err
+				return nil, fmt.Errorf("error processing subdirectory %s: %w", subDirPath, err)
 			}
+			result = append(result, matches...)
 		}
 	}
+
+	// Return an error if no matching files are found
+	if len(result) == 0 {
+		return nil, fmt.Errorf(
+			"no files with matching name '%s' found in path '%s'",
+			matchFile,
+			startPath,
+		)
+	}
+
 	return result, nil
 }
 
 func main() {
-	files, err := listAllFiles("test.yaml")
+	matches, err := listAllFiles("test")
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Error:", err)
+	} else {
+		fmt.Println("Matching files:", matches)
 	}
-	fmt.Println(files)
 }
