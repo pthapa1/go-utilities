@@ -1,47 +1,74 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"strconv"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
-func GetEnvVarGeneric(key string) (interface{}, error) {
-	envVarMap := make(map[string]string)
+func CreateFilePath(filePath string) (string, error) {
+	projectRoot, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	finalFilePath := filepath.Join(projectRoot, filePath)
+	return finalFilePath, nil
+}
 
-	envVarMap["myBool"] = "tru"
-	envVarMap["myId"] = "19393"
-	envVarMap["myFloat"] = "19393.9229"
-	envVarMap["myStr"] = "rubyOnTram"
+// a user would provide me with a name -f test
+// in the current working dir "./" list all the file paths
 
-	strValue, ok := envVarMap[key]
-	if !ok {
-		return nil, errors.New("Key " + key + "does not exist")
+func listAllFiles(path ...string) error {
+	initAbsFp, err := CreateFilePath("")
+	if err != nil {
+		fmt.Println(err)
+		return err
 	}
 
-	// Attempt to parse as bool
-	if valueBool, err := strconv.ParseBool(strValue); err == nil {
-		return valueBool, nil
+	var startPath string
+	if len(path) == 0 {
+		startPath = initAbsFp
+	} else {
+		startPath = path[0]
 	}
 
-	// Attempt to parse as int
-	if valueInt, err := strconv.Atoi(strValue); err == nil {
-		return valueInt, nil
+	dirContents, err := os.ReadDir(startPath)
+	if err != nil {
+		fmt.Println(err)
+		return err
 	}
 
-	// Attempt to parse as float
-	if valueFloat, err := strconv.ParseFloat(strValue, 64); err == nil {
-		return valueFloat, nil
-	}
+	for _, val := range dirContents {
+		filePattern := [2]string{".yaml", ".yml"}
 
-	return strValue, nil
+		// when it's a file
+		if !val.IsDir() {
+			// ensure that the file matches the pattern above
+			for _, ptrn := range filePattern {
+				if strings.Contains(val.Name(), ptrn) {
+					yamlFiles := strings.Split(val.Name(), ptrn)[0]
+					fmt.Println("Split", yamlFiles)
+				}
+			}
+		}
+
+		// recurse into subdirectories
+		if val.IsDir() {
+			subDirPath := filepath.Join(startPath, val.Name()) // Use `startPath`
+			err := listAllFiles(subDirPath)                    // Recurse with new path
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func main() {
-	parsedVal, err := GetEnvVarGeneric("myBool")
+	err := listAllFiles()
 	if err != nil {
-		fmt.Println("Error", err)
+		fmt.Println(err)
 	}
-	fmt.Printf("Type of parsedVal is %T\n", parsedVal)
-	fmt.Println(parsedVal)
 }
