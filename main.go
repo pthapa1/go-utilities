@@ -7,6 +7,9 @@ import (
 	"strings"
 )
 
+// add error saying that we don't have file with matching name if the result is empty
+// add the function description here
+// and make it efficient
 func createFilePath(filePath string) (string, error) {
 	projectRoot, err := os.Getwd()
 	if err != nil {
@@ -16,10 +19,8 @@ func createFilePath(filePath string) (string, error) {
 	return finalFilePath, nil
 }
 
-// a user would provide me with a name -f test
-// in the current working dir "./" list all the file paths
-
 func listAllFiles(matchFile string, path ...string) ([]string, error) {
+	matchFile = strings.ToLower(matchFile)
 	var result []string
 	initAbsFp, err := createFilePath("")
 	if err != nil {
@@ -49,15 +50,11 @@ func listAllFiles(matchFile string, path ...string) ([]string, error) {
 			for _, ptrn := range filePattern {
 				if strings.Contains(val.Name(), ptrn) {
 					yamlFile := strings.Split(val.Name(), ptrn)[0]
-					result = append(result, yamlFile)
-					// if matchFile == yamlFile {
-					// }
-					// lowercase it
-					// remove yaml and yml
-					// find it's path
-					// and return the relative path in result
-					// error saying that we don't have file with matching name error
-					fmt.Println("Split", yamlFile)
+					matchFile = strings.Split(matchFile, ptrn)[0]
+					if matchFile == yamlFile {
+						matchingFp := filepath.Join(startPath, val.Name())
+						result = append(result, matchingFp)
+					}
 				}
 			}
 		}
