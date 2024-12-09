@@ -8,9 +8,9 @@ import (
 	"strings"
 )
 
-// createFilePath generates an absolute file path by joining the project's root directory
+// CreateFilePath generates an absolute file path by joining the project's root directory
 // with the provided relative filePath. Returns an error if the project root cannot be determined.
-func createFilePath(filePath string) (string, error) {
+func CreateFilePath(filePath string) (string, error) {
 	projectRoot, err := os.Getwd()
 	if err != nil {
 		return "", err
@@ -27,7 +27,7 @@ func listAllFiles(matchFile string, initialPath ...string) ([]string, error) {
 	var result []string
 
 	// Get the initial path to start the search
-	initAbsFp, err := createFilePath("")
+	initAbsFp, err := CreateFilePath("")
 	if err != nil {
 		return nil, fmt.Errorf("error getting initial file path: %w", err)
 	}
