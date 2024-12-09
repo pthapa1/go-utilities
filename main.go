@@ -22,11 +22,10 @@ func CreateFilePath(filePath string) (string, error) {
 // listAllFiles searches for files matching the `matchFile` name (case-insensitive, .yaml/.yml only)
 // in the specified directory and its subdirectories. If no directory is specified, it starts from the project root.
 // Skips the `.git` folder during traversal. Returns an error if no matching files are found or if there are file system errors.
-func listAllFiles(matchFile string, initialPath ...string) ([]string, error) {
+func ListMatchingFiles(matchFile string, initialPath ...string) ([]string, error) {
 	matchFile = strings.ToLower(matchFile)
 	var result []string
 
-	// Get the initial path to start the search
 	initAbsFp, err := CreateFilePath("")
 	if err != nil {
 		return nil, fmt.Errorf("error getting initial file path: %w", err)
@@ -39,7 +38,6 @@ func listAllFiles(matchFile string, initialPath ...string) ([]string, error) {
 		startPath = initialPath[0]
 	}
 
-	// Read the contents of the starting directory
 	dirContents, err := os.ReadDir(startPath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading directory %s: %w", startPath, err)
@@ -48,16 +46,14 @@ func listAllFiles(matchFile string, initialPath ...string) ([]string, error) {
 	filePattern := [2]string{".yaml", ".yml"}
 
 	for _, val := range dirContents {
-		// Skip `.git` or `.vscode` directory
+		// Skip hidden directories
 		if val.IsDir() && strings.HasPrefix(val.Name(), ".") {
 			continue
 		}
 
 		// Process files
 		if !val.IsDir() {
-			lowerName := strings.ToLower(
-				val.Name(),
-			) // Convert name to lowercase for consistent comparison
+			lowerName := strings.ToLower(val.Name())
 			for _, ext := range filePattern {
 				if strings.HasSuffix(lowerName, ext) {
 					yamlFile := strings.TrimSuffix(lowerName, ext)
@@ -69,32 +65,34 @@ func listAllFiles(matchFile string, initialPath ...string) ([]string, error) {
 			}
 		}
 
-		// Recurse into subdirectories, skipping `.git`
+		// Process subdirectories
 		if val.IsDir() {
 			subDirPath := filepath.Join(startPath, val.Name())
-			matches, err := listAllFiles(matchFile, subDirPath)
-			if err != nil {
-				dir := path.Base(subDirPath)
-				return nil, fmt.Errorf("\n error processing subdirectory %s: %w", dir, err)
+			matches, err := ListMatchingFiles(matchFile, subDirPath)
+			if err != nil && !isNoMatchingFileError(err) {
+				fmt.Printf("Skipping subdirectory %s due to error: %v\n", val.Name(), err)
+				continue
 			}
 			result = append(result, matches...)
 		}
 	}
 
-	// Return an error if no matching files are found
 	if len(result) == 0 {
 		return nil, fmt.Errorf(
-			"\n no files with matching name '%s' found in path '%s'",
-			matchFile,
-			initAbsFp,
+			"no files with matching name '%s' found in: %s", matchFile, path.Base(initAbsFp),
 		)
 	}
 
 	return result, nil
 }
 
+// isNoMatchingFileError determines if the error is related to no matching files found.
+func isNoMatchingFileError(err error) bool {
+	return strings.Contains(err.Error(), "no files with matching name")
+}
+
 func main() {
-	matches, err := listAllFiles("test")
+	matches, err := ListMatchingFiles("test111")
 	if err != nil {
 		fmt.Println("Error:", err)
 	} else {
