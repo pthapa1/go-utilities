@@ -20,8 +20,6 @@ func GetValueOf(key string, data map[string]interface{}) (string, error) {
 	current := interface{}(data)
 
 	for i, segment := range segments {
-
-		// Check if the segment includes an array index
 		isArrayKey, keyPart, index := parseArrayKey(segment)
 
 		if isArrayKey {
@@ -51,13 +49,22 @@ func GetValueOf(key string, data map[string]interface{}) (string, error) {
 			// Get the element at the specified index
 			current = rv.Index(index).Interface()
 
-			// Continue processing if more segments remain
+			// If more segments remain, recurse
 			if i < len(segments)-1 {
-				continue
-			}
+				remainingKey := strings.Join(segments[i+1:], pathSeparator)
 
-			// If this is the last segment, return the marshaled value
-			return MarshalToJSON(current)
+				// Convert `current` to a map for further processing
+				currMap, ok := current.(map[string]interface{})
+				if !ok {
+					currMap, ok = structToMap(current)
+					if !ok {
+						return "", errors.New(
+							"invalid path, cannot process segment: " + remainingKey,
+						)
+					}
+				}
+				return GetValueOf(remainingKey, currMap)
+			}
 		} else {
 			// Treat as map key
 			currMap, ok := current.(map[string]interface{})
@@ -69,7 +76,7 @@ func GetValueOf(key string, data map[string]interface{}) (string, error) {
 				}
 			}
 
-			value, exists := currMap[keyPart]
+			value, exists := currMap[segment]
 			if !exists {
 				return "", errors.New("key not found: " + strings.Join(segments[:i+1], pathSeparator))
 			}

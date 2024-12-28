@@ -3,9 +3,9 @@ package main
 import "fmt"
 
 type Person struct {
-	Name  string `json:"name"`
-	Age   int    `json:"age"`
-	Years int    `json:"years"`
+	Name  string
+	Age   int
+	Years int
 }
 
 func main() {
@@ -71,7 +71,14 @@ func main() {
 		fmt.Println("Result for 'company.info':", result)
 	}
 
-	result, err = GetValueOf("myArr[1].name", myDict)
+	result, err = GetValueOf("myArr[1]", myDict)
+	if err != nil {
+		fmt.Println(err.Error())
+	} else {
+		fmt.Println("Result for 'myArr':", result)
+	}
+
+	result, err = GetValueOf("myArr[1].Name", myDict)
 	if err != nil {
 		fmt.Println(err.Error())
 	} else {
