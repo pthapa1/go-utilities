@@ -2,23 +2,79 @@ package main
 
 import "fmt"
 
+type Person struct {
+	Name  string `json:"name"`
+	Age   int    `json:"age"`
+	Years int    `json:"years"`
+}
+
 func main() {
 	myDict := map[string]interface{}{
-		"name":  "Pratik",
-		"age":   32,
-		"years": 111,
+		"company.inc": "Test Company",
+		"name":        "Pratik",
+		"age":         32,
+		"years":       111,
+		"marathon":    false,
 		"profession": map[string]interface{}{
-			"title": "Senior Test SE",
-			"years": 5,
+			"company.info": "Earth Based Human Led",
+			"title":        "Senior Test SE",
+			"years":        5,
 		},
 		"myArr": []Person{
 			{Name: "xaaha", Age: 22, Years: 11},
 			{Name: "pt", Age: 35, Years: 88},
+		}, "myArr2": []interface{}{
+			Person{Name: "xaaha", Age: 22, Years: 11},
+			Person{Name: "pt", Age: 35, Years: 88},
 		},
 	}
-	result, err := LookUpValuePath("myArr", myDict)
+
+	result, err := GetValueOf("age", myDict)
 	if err != nil {
 		fmt.Println(err.Error())
+	} else {
+		fmt.Println("Result for 'age':", result)
 	}
-	fmt.Println(result)
+
+	result, err = GetValueOf("marathon", myDict)
+	if err != nil {
+		fmt.Println(err.Error())
+	} else {
+		fmt.Println("Result for 'marathon':", result)
+	}
+
+	result, err = GetValueOf("profession", myDict)
+	if err != nil {
+		fmt.Println(err.Error())
+	} else {
+		fmt.Println("Result for 'profession':", result)
+	}
+
+	result, err = GetValueOf("myArr2", myDict)
+	if err != nil {
+		fmt.Println(err.Error())
+	} else {
+		fmt.Println("Result for 'myArr2':", result)
+	}
+
+	result, err = GetValueOf("{company.inc}", myDict)
+	if err != nil {
+		fmt.Println(err.Error())
+	} else {
+		fmt.Println("Result for '{company.inc}':", result)
+	}
+
+	result, err = GetValueOf("profession.{company.info}", myDict)
+	if err != nil {
+		fmt.Println(err.Error())
+	} else {
+		fmt.Println("Result for 'company.info':", result)
+	}
+
+	result, err = GetValueOf("myArr[1].name", myDict)
+	if err != nil {
+		fmt.Println(err.Error())
+	} else {
+		fmt.Println("Result for 'myArr':", result)
+	}
 }

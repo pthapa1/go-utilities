@@ -4,79 +4,157 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
 	"strings"
 )
 
-func GetValue(myKey string, dict map[string]interface{}) interface{} {
-	var result interface{}
-
-	for key, value := range dict {
-		if key == myKey {
-			result = value
-			if va, ok := value.(map[string]interface{}); ok {
-				jsonString, err := json.Marshal(va)
-				if err != nil {
-					return fmt.Sprintf("Error converting to JSON: %v", err)
-				}
-				return string(jsonString)
-			}
-			return result
-		}
-
-		// Recursively check nested maps
-		if val, ok := value.(map[string]interface{}); ok {
-			innerMap := GetValue(myKey, val)
-			if va, ok := innerMap.(map[string]interface{}); ok {
-				jsonString, err := json.Marshal(va)
-				if err != nil {
-					return fmt.Sprintf("Error converting to JSON: %v", err)
-				}
-				return string(jsonString)
-			}
-			if innerMap != nil {
-				return innerMap
-			}
-		}
-	}
-	return result
-}
-
-func LookUpValuePath(key string, data map[string]interface{}) (interface{}, error) {
+func GetValueOf(key string, data map[string]interface{}) (string, error) {
 	if value, exists := data[key]; exists {
-		return value, nil
+		return MarshalToJSON(value)
 	}
 
-	pathSeparator := "." // You can change this to "/"
-	segments := strings.Split(key, pathSeparator)
-	current := data
+	pathSeparator := "."
+	segments := parseKeySegments(key, pathSeparator)
+
+	current := interface{}(data)
 
 	for i, segment := range segments {
-		value, exists := current[segment]
-		if !exists {
-			return nil, errors.New("key not found: " + strings.Join(segments[:i+1], pathSeparator))
-		}
 
-		if i == len(segments)-1 {
-			return value, nil
-		}
+		// Check if the segment includes an array index
+		isArrayKey, keyPart, index := parseArrayKey(segment)
 
-		if nestedMap, ok := value.(map[string]interface{}); ok {
-			current = nestedMap
+		if isArrayKey {
+			// Ensure the current value is a map so we can access the array key
+			currMap, ok := current.(map[string]interface{})
+			if !ok {
+				return "", errors.New("current is not a map, cannot access key: " + keyPart)
+			}
+
+			// Retrieve the value associated with the keyPart (e.g., "myArr")
+			value, exists := currMap[keyPart]
+			if !exists {
+				return "", errors.New("key not found: " + keyPart)
+			}
+
+			// Verify the retrieved value is a slice
+			rv := reflect.ValueOf(value)
+			if rv.Kind() != reflect.Slice {
+				return "", errors.New("value is not an array: " + keyPart)
+			}
+
+			// Check index bounds
+			if index < 0 || index >= rv.Len() {
+				return "", errors.New("array index out of bounds: " + segment)
+			}
+
+			// Get the element at the specified index
+			current = rv.Index(index).Interface()
+
+			// Continue processing if more segments remain
+			if i < len(segments)-1 {
+				continue
+			}
+
+			// If this is the last segment, return the marshaled value
+			return MarshalToJSON(current)
 		} else {
-			return nil, errors.New("invalid path, segment is not a map: " + strings.Join(segments[:i+1], pathSeparator))
+			// Treat as map key
+			currMap, ok := current.(map[string]interface{})
+			if !ok {
+				// Handle struct conversion
+				currMap, ok = structToMap(current)
+				if !ok {
+					return "", errors.New("invalid path, segment is not a map: " + strings.Join(segments[:i+1], pathSeparator))
+				}
+			}
+
+			value, exists := currMap[keyPart]
+			if !exists {
+				return "", errors.New("key not found: " + strings.Join(segments[:i+1], pathSeparator))
+			}
+			current = value
+		}
+
+		// If this is the last segment, marshal and return the value
+		if i == len(segments)-1 {
+			return MarshalToJSON(current)
 		}
 	}
 
-	return nil, errors.New("unexpected error")
+	return "", errors.New("unexpected error")
 }
 
-type Person struct {
-	Name  string
-	Age   int
-	Years int
+func structToMap(value interface{}) (map[string]interface{}, bool) {
+	val := reflect.ValueOf(value)
+	if val.Kind() == reflect.Struct {
+		mapData := make(map[string]interface{})
+		valType := val.Type()
+		for i := 0; i < val.NumField(); i++ {
+			field := valType.Field(i)
+			mapData[field.Name] = val.Field(i).Interface()
+		}
+		return mapData, true
+	}
+	return nil, false
 }
 
-// return json
-// stringfy the response if it's json
-// skip the .
-// use of [0] should be accepted as well for arrays
+func parseKeySegments(key, pathSeparator string) []string {
+	var segments []string
+	current := strings.Builder{}
+	inBracket := false
+
+	for _, char := range key {
+		switch {
+		case char == '{':
+			inBracket = true
+		case char == '}':
+			inBracket = false
+			segments = append(segments, current.String())
+			current.Reset()
+		case char == rune(pathSeparator[0]) && !inBracket:
+			segments = append(segments, current.String())
+			current.Reset()
+		default:
+			current.WriteRune(char)
+		}
+	}
+	// Append the last segment, if any
+	if current.Len() > 0 {
+		segments = append(segments, current.String())
+	}
+	return segments
+}
+
+func parseArrayKey(segment string) (bool, string, int) {
+	if strings.HasSuffix(segment, "]") && strings.Contains(segment, "[") {
+		openBracket := strings.LastIndex(segment, "[")
+		closeBracket := strings.LastIndex(segment, "]")
+		indexStr := segment[openBracket+1 : closeBracket]
+		index, err := strconv.Atoi(indexStr)
+		if err != nil {
+			return false, segment, -1 // Invalid index
+		}
+		return true, segment[:openBracket], index
+	}
+	return false, segment, -1
+}
+
+func MarshalToJSON(value interface{}) (string, error) {
+	if arr, ok := value.([]interface{}); ok {
+		var jsonArray []string
+		for _, item := range arr {
+			jsonStr, err := json.Marshal(item)
+			if err != nil {
+				return "", err
+			}
+			jsonArray = append(jsonArray, string(jsonStr))
+		}
+		return fmt.Sprintf("[%s]", strings.Join(jsonArray, ",")), nil
+	}
+	jsonStr, err := json.Marshal(value)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonStr), nil
+}
