@@ -10,85 +10,61 @@ import (
 )
 
 func GetValueOf(key string, data map[string]interface{}) (string, error) {
+	// Step 1: Check for direct key match
 	if value, exists := data[key]; exists {
 		return MarshalToJSON(value)
 	}
 
-	pathSeparator := "."
-	segments := parseKeySegments(key, pathSeparator)
+	// Step 2: Parse the key into segments
+	segments := parseKeySegments(key, ".")
 
+	// Step 3: Initialize the current context
 	current := interface{}(data)
 
+	// Step 4: Iterate through key segments
 	for i, segment := range segments {
 		isArrayKey, keyPart, index := parseArrayKey(segment)
 
-		if isArrayKey {
-			// Ensure the current value is a map so we can access the array key
-			currMap, ok := current.(map[string]interface{})
+		// Step 5: Ensure current context is a map
+		currMap, ok := current.(map[string]interface{})
+		if !ok {
+			currMap, ok = structToMap(current)
 			if !ok {
-				return "", errors.New("current is not a map, cannot access key: " + keyPart)
+				return "", errors.New(
+					"invalid path, segment is not a map: " + strings.Join(segments[:i+1], "."),
+				)
 			}
+		}
 
-			// Retrieve the value associated with the keyPart (e.g., "myArr")
+		if isArrayKey {
+			// Step 6: Handle array keys
 			value, exists := currMap[keyPart]
 			if !exists {
 				return "", errors.New("key not found: " + keyPart)
 			}
 
-			// Verify the retrieved value is a slice
 			rv := reflect.ValueOf(value)
-			if rv.Kind() != reflect.Slice {
-				return "", errors.New("value is not an array: " + keyPart)
+			if rv.Kind() != reflect.Slice || index < 0 || index >= rv.Len() {
+				return "", errors.New("invalid array access: " + segment)
 			}
 
-			// Check index bounds
-			if index < 0 || index >= rv.Len() {
-				return "", errors.New("array index out of bounds: " + segment)
-			}
-
-			// Get the element at the specified index
 			current = rv.Index(index).Interface()
-
-			// If more segments remain, recurse
-			if i < len(segments)-1 {
-				remainingKey := strings.Join(segments[i+1:], pathSeparator)
-
-				// Convert `current` to a map for further processing
-				currMap, ok := current.(map[string]interface{})
-				if !ok {
-					currMap, ok = structToMap(current)
-					if !ok {
-						return "", errors.New(
-							"invalid path, cannot process segment: " + remainingKey,
-						)
-					}
-				}
-				return GetValueOf(remainingKey, currMap)
-			}
 		} else {
-			// Treat as map key
-			currMap, ok := current.(map[string]interface{})
-			if !ok {
-				// Handle struct conversion
-				currMap, ok = structToMap(current)
-				if !ok {
-					return "", errors.New("invalid path, segment is not a map: " + strings.Join(segments[:i+1], pathSeparator))
-				}
-			}
-
+			// Step 7: Handle map keys
 			value, exists := currMap[segment]
 			if !exists {
-				return "", errors.New("key not found: " + strings.Join(segments[:i+1], pathSeparator))
+				return "", errors.New("key not found: " + strings.Join(segments[:i+1], "."))
 			}
 			current = value
 		}
 
-		// If this is the last segment, marshal and return the value
+		// Step 8: Check for the last segment
 		if i == len(segments)-1 {
 			return MarshalToJSON(current)
 		}
 	}
 
+	// Step 9: Return error if unexpected
 	return "", errors.New("unexpected error")
 }
 

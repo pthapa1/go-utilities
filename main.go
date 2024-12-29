@@ -82,6 +82,6 @@ func main() {
 	if err != nil {
 		fmt.Println(err.Error())
 	} else {
-		fmt.Println("Result for 'myArr':", result)
+		fmt.Println("Result for 'myArr.name':", result)
 	}
 }
