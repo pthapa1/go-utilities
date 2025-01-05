@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func GetValueOf(key string, data map[string]interface{}) (string, error) {
+func GetValueOf(key string, data map[string]interface{}) (interface{}, error) {
 	// Step 1: Check for direct key match
 	if value, exists := data[key]; exists {
 		return MarshalToJSON(value)
@@ -123,21 +123,28 @@ func parseArrayKey(segment string) (bool, string, int) {
 	return false, segment, -1
 }
 
-func MarshalToJSON(value interface{}) (string, error) {
-	if arr, ok := value.([]interface{}); ok {
-		var jsonArray []string
-		for _, item := range arr {
-			jsonStr, err := json.Marshal(item)
-			if err != nil {
-				return "", err
+func MarshalToJSON(value interface{}) (interface{}, error) {
+	switch val := value.(type) {
+	case string, bool, int, float64:
+		return val, nil
+	case nil:
+		return nil, nil
+	default:
+		if arr, ok := value.([]interface{}); ok {
+			var jsonArray []string
+			for _, item := range arr {
+				jsonStr, err := json.Marshal(item)
+				if err != nil {
+					return "", err
+				}
+				jsonArray = append(jsonArray, string(jsonStr))
 			}
-			jsonArray = append(jsonArray, string(jsonStr))
+			return fmt.Sprintf("[%s]", strings.Join(jsonArray, ",")), nil
 		}
-		return fmt.Sprintf("[%s]", strings.Join(jsonArray, ",")), nil
+		jsonStr, err := json.Marshal(value)
+		if err != nil {
+			return "", err
+		}
+		return string(jsonStr), nil
 	}
-	jsonStr, err := json.Marshal(value)
-	if err != nil {
-		return "", err
-	}
-	return string(jsonStr), nil
 }

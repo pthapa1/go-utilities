@@ -1,87 +1,28 @@
 package main
 
-import "fmt"
-
-type Person struct {
-	Name  string
-	Age   int
-	Years int
-}
+import (
+	"fmt"
+	"strings"
+)
 
 func main() {
-	myDict := map[string]interface{}{
-		"company.inc": "Test Company",
-		"name":        "Pratik",
-		"age":         32,
-		"years":       111,
-		"marathon":    false,
-		"profession": map[string]interface{}{
-			"company.info": "Earth Based Human Led",
-			"title":        "Senior Test SE",
-			"years":        5,
-		},
-		"myArr": []Person{
-			{Name: "xaaha", Age: 22, Years: 11},
-			{Name: "pt", Age: 35, Years: 88},
-		}, "myArr2": []interface{}{
-			Person{Name: "xaaha", Age: 22, Years: 11},
-			Person{Name: "pt", Age: 35, Years: 88},
-		},
-	}
+	str1 := ".value"
+	str2 := `getValueOf "foo" "bar"`
 
-	result, err := GetValueOf("age", myDict)
-	if err != nil {
-		fmt.Println(err.Error())
-	} else {
-		fmt.Println("Result for 'age':", result)
+	res := strings.Split(str2, " ")
+	var key string
+	for i, value := range res {
+		value = strings.ReplaceAll(value, `"`, "")
+		value = strings.ReplaceAll(value, `'`, "")
+		if res[0] == "getValueOf" && i == 1 {
+			key = value
+		}
 	}
+	fmt.Println(key)
 
-	result, err = GetValueOf("marathon", myDict)
-	if err != nil {
-		fmt.Println(err.Error())
-	} else {
-		fmt.Println("Result for 'marathon':", result)
-	}
-
-	result, err = GetValueOf("profession", myDict)
-	if err != nil {
-		fmt.Println(err.Error())
-	} else {
-		fmt.Println("Result for 'profession':", result)
-	}
-
-	result, err = GetValueOf("myArr2", myDict)
-	if err != nil {
-		fmt.Println(err.Error())
-	} else {
-		fmt.Println("Result for 'myArr2':", result)
-	}
-
-	result, err = GetValueOf("{company.inc}", myDict)
-	if err != nil {
-		fmt.Println(err.Error())
-	} else {
-		fmt.Println("Result for '{company.inc}':", result)
-	}
-
-	result, err = GetValueOf("profession.{company.info}", myDict)
-	if err != nil {
-		fmt.Println(err.Error())
-	} else {
-		fmt.Println("Result for 'company.info':", result)
-	}
-
-	result, err = GetValueOf("myArr[1]", myDict)
-	if err != nil {
-		fmt.Println(err.Error())
-	} else {
-		fmt.Println("Result for 'myArr':", result)
-	}
-
-	result, err = GetValueOf("myArr[1].Name", myDict)
-	if err != nil {
-		fmt.Println(err.Error())
-	} else {
-		fmt.Println("Result for 'myArr.name':", result)
-	}
+	fmt.Println(string(str1[0]) == ".")
 }
+
+// if length is zero, return ""
+// if length is not zero && it only has whitespace, return ""
+// if the length is not zero, and !onlyHasEmptySpace, trim whitespace, and return content
