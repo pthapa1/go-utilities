@@ -1,45 +1,46 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
 
-// func marshalToJSON(value interface{}) (interface{}, error) {
-// 	switch val := value.(type) {
-// 	case string, bool, int, float64:
-// 		return val, nil
-// 	case nil:
-// 		return nil, nil
-// 	default:
-// 		if arr, ok := value.([]interface{}); ok {
-// 			var jsonArray []string
-// 			for _, item := range arr {
-// 				jsonStr, err := json.Marshal(item)
-// 				if err != nil {
-// 					return "", err
-// 				}
-// 				jsonArray = append(jsonArray, string(jsonStr))
-// 			}
-// 			return fmt.Sprintf("[%s]", strings.Join(jsonArray, ",")), nil
-// 		}
-// 		jsonStr, err := json.Marshal(value)
-// 		if err != nil {
-// 			return "", err
-// 		}
-// 		return string(jsonStr), nil
-// 	}
-// }
+func marshalToJSON(value interface{}) (interface{}, error) {
+	switch val := value.(type) {
+	case string, bool, int, float64:
+		return val, nil
+	case nil:
+		return nil, nil
+	default:
+		if arr, ok := value.([]interface{}); ok {
+			var jsonArray []string
+			for _, item := range arr {
+				jsonStr, err := json.Marshal(item)
+				if err != nil {
+					return "", err
+				}
+				jsonArray = append(jsonArray, string(jsonStr))
+			}
+			return fmt.Sprintf("[%s]", strings.Join(jsonArray, ",")), nil
+		}
+		jsonStr, err := json.Marshal(value)
+		if err != nil {
+			return "", err
+		}
+		return string(jsonStr), nil
+	}
+}
 
 func replaceInPlace(
 	beforeMap map[string]interface{},
-	afterMap map[string]interface{},
 	parentKey string,
 ) map[string]interface{} {
 	cmprt := make(map[string]interface{})
 	for bKey, bValue := range beforeMap {
-		// Construct the current path key
 		currentKey := bKey
+
+		// if the parentKey has something,
 		if parentKey != "" {
 			currentKey = parentKey + " -> " + bKey
 		}
@@ -49,12 +50,10 @@ func replaceInPlace(
 			// Example: Check if value contains a "." and modify accordingly
 			if strings.Contains(bTypeVal, ".") {
 				cmprt[currentKey] = "modified_value"
-			} else {
-				cmprt[currentKey] = bValue
 			}
 		case map[string]interface{}:
 			// Recurse into nested maps
-			cmprt = mergeMaps(cmprt, replaceInPlace(bTypeVal, afterMap, currentKey))
+			cmprt = mergeMaps(cmprt, replaceInPlace(bTypeVal, currentKey))
 		default:
 			fmt.Println("uncovered type")
 			cmprt[currentKey] = bValue
@@ -82,11 +81,10 @@ func main() {
 		},
 	}
 
-	afterMap := map[string]interface{}{} // Unused but included for completeness
-	result := replaceInPlace(beforeMap, afterMap, "")
-	for k, v := range result {
-		fmt.Printf("%s: %v\n", k, v)
-	}
+	result := replaceInPlace(beforeMap, "")
+
+	prt, _ := marshalToJSON(result)
+	fmt.Println(prt)
 }
 
 // func main() {
