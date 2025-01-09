@@ -54,6 +54,11 @@ func replaceInPlace(
 		case map[string]interface{}:
 			// Recurse into nested maps
 			cmprt = mergeMaps(cmprt, replaceInPlace(bTypeVal, currentKey))
+		case []map[string]interface{}:
+			for idx, val := range bTypeVal {
+				key := fmt.Sprintf("%s[%d]", currentKey, idx)
+				cmprt = mergeMaps(cmprt, replaceInPlace(val, key))
+			}
 		default:
 			fmt.Println("uncovered type")
 			cmprt[currentKey] = bValue
@@ -78,6 +83,12 @@ func main() {
 		"person": map[string]interface{}{
 			"name": "Jane Doe",
 			"age":  "{{.Age}}",
+		},
+		"users": []map[string]interface{}{
+			{"person": map[string]interface{}{
+				"name": "Jane Doe",
+				"age":  "{{.Age}}",
+			}},
 		},
 	}
 
