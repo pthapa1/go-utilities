@@ -52,7 +52,6 @@ func replaceInPlace(
 				cmprt[currentKey] = "modified_value"
 			}
 		case map[string]interface{}:
-			// Recurse into nested maps
 			cmprt = mergeMaps(cmprt, replaceInPlace(bTypeVal, currentKey))
 		case []map[string]interface{}:
 			for idx, val := range bTypeVal {
