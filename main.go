@@ -32,86 +32,17 @@ func marshalToJSON(value interface{}) (interface{}, error) {
 	}
 }
 
-func replaceInPlace(
-	beforeMap map[string]interface{},
-	parentKey string,
-) []string {
-	var cmprt []string
-	for bKey, bValue := range beforeMap {
-		currentKey := bKey
-
-		// if the parentKey has something,
-		if parentKey != "" {
-			currentKey = parentKey + " -> " + bKey
-		}
-
-		switch bTypeVal := bValue.(type) {
-		case string:
-			// Example: Check if value contains a "." and modify accordingly
-			if strings.Contains(bTypeVal, ".") {
-				cmprt = append(cmprt, currentKey)
-			}
-		case map[string]interface{}:
-			// cmprt = mergeMaps(cmprt, replaceInPlace(bTypeVal, currentKey))
-			cmprt = append(cmprt, replaceInPlace(bTypeVal, currentKey)...)
-		case []map[string]interface{}:
-			for idx, val := range bTypeVal {
-				key := fmt.Sprintf("%s[%d]", currentKey, idx)
-				// cmprt = mergeMaps(cmprt, replaceInPlace(val, key))
-				cmprt = append(cmprt, replaceInPlace(val, key)...)
-			}
-		default:
-			fmt.Println("uncovered type")
-			cmprt = append(cmprt, fmt.Sprintf("%s: %v", currentKey, bTypeVal))
-		}
+func cleanStrings(stringsToClean []string) []string {
+	cleaned := make([]string, len(stringsToClean))
+	for i, str := range stringsToClean {
+		cleaned[i] = strings.NewReplacer(`"`, "", "`", "").Replace(str)
 	}
-	return cmprt
+	return cleaned
 }
 
 func main() {
-	beforeMap := map[string]interface{}{
-		"foo":   "bar",
-		"miles": "{{.distance}}",
-		"age":   "29",
-		"person": map[string]interface{}{
-			"name": "Jane Doe",
-			"age":  "{{.Age}}",
-		},
-		"users": []map[string]interface{}{
-			{"person": map[string]interface{}{
-				"name": "Jane Doe",
-				"age":  "{{.Age}}",
-			}},
-		},
-	}
-
-	result := replaceInPlace(beforeMap, "")
-
-	prt, _ := marshalToJSON(result)
-	fmt.Println(prt)
+	arg := []string{`myva'l`, `"marshall"`, "`should w'ork`"}
+	result := cleanStrings(arg)
+	pt, _ := marshalToJSON(result)
+	fmt.Println(pt)
 }
-
-// func main() {
-// 	beforeMap := map[string]interface{}{
-// 		"foo":   "bar",
-// 		"miles": "{{.distance}}",
-// 		"age":   "29",
-// 		"person": map[string]interface{}{
-// 			"name": "Jane Doe",
-// 			"age":  "{{.Age}}",
-// 		},
-// 	}
-// 	afterMap := map[string]interface{}{
-// 		"foo":   "bar",
-// 		"miles": "26.2",
-// 		"age":   "30",
-// 		"person": map[string]interface{}{
-// 			"name": "Jane Doe",
-// 			"age":  "50",
-// 		},
-// 	}
-// 	modifiedMap := replaceInPlace(beforeMap, afterMap)
-
-// 	jsonString, _ := marshalToJSON(modifiedMap)
-// 	fmt.Println(jsonString)
-// }
