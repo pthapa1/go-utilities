@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -32,17 +33,46 @@ func marshalToJSON(value interface{}) (interface{}, error) {
 	}
 }
 
-func cleanStrings(stringsToClean []string) []string {
-	cleaned := make([]string, len(stringsToClean))
-	for i, str := range stringsToClean {
-		cleaned[i] = strings.NewReplacer(`"`, "", "`", "").Replace(str)
+func ParseArrayKey(segment string) (bool, string, int) {
+	if strings.HasSuffix(segment, "]") && strings.Contains(segment, "[") {
+		openBracket := strings.LastIndex(segment, "[")
+		closeBracket := strings.LastIndex(segment, "]")
+		indexStr := segment[openBracket+1 : closeBracket]
+		index, err := strconv.Atoi(indexStr)
+		if err != nil {
+			return false, segment, -1 // Invalid index
+		}
+		return true, segment[:openBracket], index
 	}
-	return cleaned
+	return false, segment, -1
+}
+
+func parsePath(path string) ([]interface{}, error) {
+	var keys []interface{}
+
+	if len(path) == 0 {
+		return keys, fmt.Errorf("path should not be empty")
+	}
+
+	rawKeys := strings.Split(path, "->")
+	for _, segment := range rawKeys {
+		trimmedKey := strings.TrimSpace(segment)
+		isArrayKey, keyPart, index := ParseArrayKey(trimmedKey)
+		if isArrayKey {
+			keys = append(keys, keyPart)
+			keys = append(keys, index)
+		} else {
+			keys = append(keys, trimmedKey)
+		}
+	}
+	return keys, nil
 }
 
 func main() {
-	arg := []string{`myva'l`, `"marshall"`, "`should w'ork`"}
-	result := cleanStrings(arg)
-	pt, _ := marshalToJSON(result)
-	fmt.Println(pt)
+	keys, err := parsePath("employer[0] -> id")
+	if err != nil {
+		fmt.Println(err)
+	}
+	prt, _ := marshalToJSON(keys)
+	fmt.Println(prt)
 }
