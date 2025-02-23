@@ -6,14 +6,15 @@ import (
 	"strings"
 )
 
-func MarshalToJson(value interface{}) (interface{}, error) {
+// Marshall any object to json string, similar to JSON.stringify
+func MarshalToJson(value any) (any, error) {
 	switch val := value.(type) {
 	case string, bool, int, float64:
 		return val, nil
 	case nil:
 		return nil, nil
 	default:
-		if arr, ok := value.([]interface{}); ok {
+		if arr, ok := value.([]any); ok {
 			var jsonArray []string
 			for _, item := range arr {
 				jsonStr, err := json.Marshal(item)
